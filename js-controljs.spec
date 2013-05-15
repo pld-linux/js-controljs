@@ -1,5 +1,5 @@
 %define		svnrev	r12
-%define		rel		1
+%define		rel		2
 Summary:	ControlJS is a JavaScript module for making scripts load faster
 Name:		js-controljs
 Version:	0.1
@@ -14,6 +14,7 @@ BuildRequires:	js
 BuildRequires:	closure-compiler
 Requires:	webserver(access)
 Requires:	webserver(alias)
+Conflicts:	apache-base < 2.4.0-1
 BuildArch:	noarch
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
@@ -29,11 +30,19 @@ ControlJS is a JavaScript module for making scripts load faster.
 %setup -qcT
 cp -p %{SOURCE0} .
 
-# Apache1/Apache2 config
+# Apache1 config
 cat > apache.conf <<'EOF'
 Alias /js/controljs/ %{_appdir}/
 <Directory %{_appdir}>
 	Allow from all
+</Directory>
+EOF
+
+# Apache2 config
+cat > httpd.conf <<'EOF'
+Alias /js/controljs/ %{_appdir}/
+<Directory %{_appdir}>
+	Require all granted
 </Directory>
 EOF
 
@@ -56,7 +65,7 @@ cp -p build/* $RPM_BUILD_ROOT%{_appdir}
 
 install -d $RPM_BUILD_ROOT%{_sysconfdir}
 cp -p apache.conf $RPM_BUILD_ROOT%{_sysconfdir}/apache.conf
-cp -p apache.conf $RPM_BUILD_ROOT%{_sysconfdir}/httpd.conf
+cp -p httpd.conf $RPM_BUILD_ROOT%{_sysconfdir}/httpd.conf
 cp -p lighttpd.conf $RPM_BUILD_ROOT%{_sysconfdir}/lighttpd.conf
 
 %clean
@@ -68,10 +77,10 @@ rm -rf $RPM_BUILD_ROOT
 %triggerun -- apache1 < 1.3.37-3, apache1-base
 %webapp_unregister apache %{_webapp}
 
-%triggerin -- apache < 2.2.0, apache-base
+%triggerin -- apache-base
 %webapp_register httpd %{_webapp}
 
-%triggerun -- apache < 2.2.0, apache-base
+%triggerun -- apache-base
 %webapp_unregister httpd %{_webapp}
 
 %triggerin -- lighttpd
